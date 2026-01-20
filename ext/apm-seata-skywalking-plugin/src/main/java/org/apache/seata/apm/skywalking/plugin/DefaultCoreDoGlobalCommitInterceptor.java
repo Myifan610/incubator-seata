@@ -32,6 +32,18 @@ import java.lang.reflect.Method;
 
 public class DefaultCoreDoGlobalCommitInterceptor implements InstanceMethodsAroundInterceptor {
 
+    private RpcMessage findRpcMessage(Object[] allArguments) {
+        if (allArguments == null) {
+            return null;
+        }
+        for (Object arg : allArguments) {
+            if (arg instanceof RpcMessage) {
+                return (RpcMessage) arg;
+            }
+        }
+        return null;
+    }
+
     @Override
     public void beforeMethod(
             EnhancedInstance objInst,
@@ -40,7 +52,11 @@ public class DefaultCoreDoGlobalCommitInterceptor implements InstanceMethodsArou
             Class<?>[] argumentsTypes,
             MethodInterceptResult result)
             throws Throwable {
-        RpcMessage rpcMessage = (RpcMessage) allArguments[0];
+
+        RpcMessage rpcMessage = findRpcMessage(allArguments);
+        if (rpcMessage == null) {
+            return;
+        }
         if (!(rpcMessage.getBody() instanceof AbstractMessage)) {
             return;
         }
@@ -59,8 +75,9 @@ public class DefaultCoreDoGlobalCommitInterceptor implements InstanceMethodsArou
     public Object afterMethod(
             EnhancedInstance objInst, Method method, Object[] allArguments, Class<?>[] argumentsTypes, Object ret)
             throws Throwable {
-        RpcMessage rpcMessage = (RpcMessage) allArguments[0];
-        if (rpcMessage.getBody() instanceof AbstractMessage) {
+
+        RpcMessage rpcMessage = findRpcMessage(allArguments);
+        if (rpcMessage != null && rpcMessage.getBody() instanceof AbstractMessage) {
             ContextManager.stopSpan();
         }
         return ret;
